@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}الطلاب{% endblock %}
+{% block content %}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold">الطلاب <span class="text-gray-400 text-lg">({{ total }})</span></h1>
+  <div class="flex gap-2 flex-wrap">
+    <a href="{% url 'student_add' %}" class="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-bold">+ طالب</a>
+    <a href="{% url 'students_import' %}" class="bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-bold">استيراد إكسل</a>
+    <a href="{% url 'student_cards' %}" class="bg-gray-700 text-white rounded-lg px-4 py-2 text-sm font-bold">طباعة كروت</a>
+  </div>
+</div>
+
+<form class="mb-4">
+  <input name="q" value="{{ q }}" placeholder="ابحث بالاسم أو الباركود أو التليفون..."
+         class="w-full border rounded-lg p-3 text-lg focus:ring-2 ring-indigo-400 outline-none">
+</form>
+
+<div class="bg-white rounded-xl shadow divide-y">
+  {% for s in students %}
+  <a href="{% url 'student_detail' s.pk %}" class="flex items-center justify-between p-3 gap-3 hover:bg-gray-50">
+    <div>
+      <div class="font-semibold">{{ s.name }}
+        <span class="text-xs text-gray-400 mr-2">{{ s.get_grade_display }}</span>
+      </div>
+      <div class="text-xs text-gray-500">
+        {{ s.barcode }} · {{ s.parent_phone }}
+        {% for e in s.enrollments.all %}{% if e.is_active %}
+          <span class="bg-indigo-50 text-indigo-700 rounded px-1.5 py-0.5 mr-1">{{ e.group.name }}</span>
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    <span class="text-gray-300">‹</span>
+  </a>
+  {% empty %}
+  <div class="p-8 text-center text-gray-400">
+    مفيش طلاب.
+    <a href="{% url 'student_add' %}" class="text-indigo-600 underline">أضف طالب</a>
+    أو
+    <a href="{% url 'students_import' %}" class="text-indigo-600 underline">استورد من إكسل</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}الأقساط{% endblock %}
+{% block content %}
+
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold">الأقساط — {{ month|date:"F Y" }}</h1>
+  <div class="flex gap-3 text-sm">
+    <div class="bg-green-100 text-green-800 rounded-lg px-3 py-1">محصّل: <strong>{{ total_collected }} ج</strong></div>
+    <div class="bg-red-100 text-red-800 rounded-lg px-3 py-1">متبقي: <strong>{{ total_expected }} ج</strong> ({{ unpaid_count }})</div>
+  </div>
+</div>
+
+<!-- فلاتر -->
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <select name="group" onchange="this.form.submit()" class="border rounded-lg p-2">
+    <option value="">كل المجموعات</option>
+    {% for g in groups %}
+    <option value="{{ g.pk }}" {% if selected_group and selected_group.pk == g.pk %}selected{% endif %}>
+      {{ g.name }} — {{ g.subject }}
+    </option>
+    {% endfor %}
+  </select>
+  <input type="month" name="month" value="{{ month|date:'Y-m' }}" onchange="this.form.submit()"
+         class="border rounded-lg p-2">
+</form>
+
+<!-- تذكير جماعي -->
+{% if unpaid_count %}
+<form method="post" action="{% url 'payment_remind' %}" class="mb-4"
+      onsubmit="return confirm('هتتبعت رسائل تذكير لأولياء الأمور. متأكد؟')">
+  {% csrf_token %}
+  {% if selected_group %}<input type="hidden" name="group_id" value="{{ selected_group.pk }}">{% endif %}
+  <div id="remind-ids"></div>
+  <button type="submit" id="remind-btn" disabled
+          class="bg-orange-500 text-white rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-40">
+    تذكير جماعي للمحددين
+  </button>
+</form>
+{% endif %}
+
+<!-- القائمة -->
+<div class="bg-white rounded-xl shadow divide-y" id="payments-list">
+  {% for row in rows %}
+  {% include 'payments/partials/row.html' %}
+  {% empty %}
+  <div class="p-8 text-center text-gray-400">مفيش طلاب في الفلتر ده</div>
+  {% endfor %}
+</div>
+
+<script>
+function updateRemindBtn() {
+  const checked = document.querySelectorAll('.unpaid-cb:checked');
+  const btn = document.getElementById('remind-btn');
+  const box = document.getElementById('remind-ids');
+  if (!btn) return;
+  btn.disabled = checked.length === 0;
+  box.innerHTML = '';
+  checked.forEach(cb => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = 'student_ids'; inp.value = cb.value;
+    box.appendChild(inp);
+  });
+}
+document.body.addEventListener('change', e => {
+  if (e.target.classList.contains('unpaid-cb')) updateRemindBtn();
+});
+</script>
+{% endblock %}

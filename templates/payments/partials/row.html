@@ -1,0 +1,35 @@
+<div class="flex items-center justify-between p-3 gap-3 {% if not is_paid %}bg-red-50{% else %}bg-green-50{% endif %}"
+     id="pay-{{ student.pk }}-{{ group.pk }}">
+  <div class="flex items-center gap-2 flex-1">
+    {% if not is_paid %}
+    <input type="checkbox" class="unpaid-cb" value="{{ student.pk }}">
+    {% endif %}
+    <div>
+      <div class="font-semibold">{{ student.name }}
+        {% if not is_paid %}<span class="text-xs bg-red-600 text-white rounded px-1.5 py-0.5 mr-1">متأخر</span>{% endif %}
+      </div>
+      <div class="text-xs text-gray-500">
+        {{ group.name }} — {{ group.subject }} · {{ fee }} ج
+        {% if payment %} · {{ payment.get_method_display }} · {{ payment.paid_at|date:"d/m h:i A" }}{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if not is_paid %}
+  <form hx-post="{% url 'payment_mark' %}" hx-target="#pay-{{ student.pk }}-{{ group.pk }}" hx-swap="outerHTML"
+        class="flex items-center gap-1">
+    {% csrf_token %}
+    <input type="hidden" name="student_id" value="{{ student.pk }}">
+    <input type="hidden" name="group_id" value="{{ group.pk }}">
+    <input type="hidden" name="amount" value="{{ fee }}">
+    <select name="method" class="text-xs border rounded p-1">
+      <option value="cash">كاش</option>
+      <option value="wallet">محفظة</option>
+      <option value="instapay">إنستاباي</option>
+    </select>
+    <button class="bg-green-600 text-white rounded px-3 py-1 text-sm font-bold">تم الدفع</button>
+  </form>
+  {% else %}
+  <span class="text-green-700 font-bold text-sm">✔ {{ payment.amount }} ج</span>
+  {% endif %}
+</div>

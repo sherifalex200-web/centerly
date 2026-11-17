@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}{% if student %}تعديل {{ student.name }}{% else %}إضافة طالب{% endif %}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-2xl font-bold mb-4">{% if student %}تعديل طالب{% else %}إضافة طالب جديد{% endif %}</h1>
+  <form method="post" class="bg-white rounded-xl shadow p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1">اسم الطالب *</label>
+      <input name="name" value="{{ student.name|default:'' }}" required class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">تليفون ولي الأمر *</label>
+      <input name="parent_phone" value="{{ student.parent_phone|default:'' }}" required dir="ltr"
+             class="w-full border rounded-lg p-2" placeholder="01xxxxxxxxx">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">الصف</label>
+      <select name="grade" class="w-full border rounded-lg p-2">
+        {% for code, label in grades %}
+        <option value="{{ code }}" {% if student and student.grade == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">تليفون الطالب</label>
+      <input name="phone" value="{{ student.phone|default:'' }}" dir="ltr" class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">المدرسة</label>
+      <input name="school" value="{{ student.school|default:'' }}" class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">ملاحظات</label>
+      <textarea name="notes" rows="2" class="w-full border rounded-lg p-2">{{ student.notes|default:'' }}</textarea>
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-2">المجموعات</label>
+      <div class="space-y-1 max-h-40 overflow-y-auto border rounded-lg p-2">
+        {% for g in groups %}
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="groups" value="{{ g.pk }}"
+                 {% if g.pk in enrolled_ids %}checked{% endif %}>
+          {{ g.name }} — {{ g.subject }} ({{ g.get_grade_display }})
+        </label>
+        {% empty %}
+        <p class="text-gray-400 text-sm">مفيش مجموعات. أضف من الـ Admin أولاً.</p>
+        {% endfor %}
+      </div>
+    </div>
+    {% if student %}
+    <p class="text-xs text-gray-400">الباركود: {{ student.barcode }} (لا يتغير)</p>
+    {% endif %}
+    <button class="w-full bg-indigo-600 text-white rounded-lg py-3 font-bold">حفظ</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}تقرير الحضور{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">تقرير الحضور</h1>
+
+<form method="get" class="flex flex-wrap gap-2 mb-4 bg-white rounded-xl shadow p-4">
+  <select name="group" required class="border rounded-lg p-2 flex-1 min-w-[150px]">
+    <option value="">اختر مجموعة</option>
+    {% for g in groups %}
+    <option value="{{ g.pk }}" {% if selected_group and selected_group.pk == g.pk %}selected{% endif %}>
+      {{ g.name }} — {{ g.subject }}
+    </option>
+    {% endfor %}
+  </select>
+  <input type="date" name="from" value="{{ date_from }}" class="border rounded-lg p-2">
+  <input type="date" name="to" value="{{ date_to }}" class="border rounded-lg p-2">
+  <button class="bg-indigo-600 text-white rounded-lg px-4 py-2 font-bold">عرض</button>
+  {% if selected_group %}
+  <a href="{% url 'export_attendance_excel' %}?group={{ selected_group.pk }}&from={{ date_from }}&to={{ date_to }}"
+     class="bg-green-600 text-white rounded-lg px-4 py-2 font-bold">تصدير إكسل</a>
+  {% endif %}
+</form>
+
+{% if selected_group %}
+<div class="bg-white rounded-xl shadow overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="p-2 text-right sticky right-0 bg-gray-50">الطالب</th>
+        <th class="p-2">حاضر</th>
+        <th class="p-2">غائب</th>
+        <th class="p-2">%</th>
+        {% for s in sessions %}
+        <th class="p-2 text-xs">{{ s.date|date:"d/m" }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for r in rows %}
+      <tr>
+        <td class="p-2 font-medium sticky right-0 bg-white">{{ r.student.name }}</td>
+        <td class="p-2 text-center text-green-600">{{ r.present }}</td>
+        <td class="p-2 text-center text-red-600">{{ r.absent }}</td>
+        <td class="p-2 text-center font-bold">{{ r.pct }}%</td>
+        {% for c in r.cells %}
+        <td class="p-2 text-center
+          {% if c == 'P' %}text-green-600{% elif c == 'A' %}text-red-600{% else %}text-gray-300{% endif %}">
+          {{ c }}
+        </td>
+        {% endfor %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="20" class="p-6 text-center text-gray-400">مفيش بيانات</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="text-xs text-gray-400 mt-2">P = حاضر · A = غائب · - = لم يُسجل</p>
+{% endif %}
+{% endblock %}

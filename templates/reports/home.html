@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}التقارير{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">التقارير</h1>
+<div class="grid md:grid-cols-2 gap-4">
+  <a href="{% url 'report_attendance' %}" class="bg-white rounded-xl shadow p-6 hover:ring-2 ring-indigo-400">
+    <div class="text-3xl mb-2">📋</div>
+    <div class="font-bold text-lg">تقرير الحضور</div>
+    <p class="text-sm text-gray-500 mt-1">نسبة حضور كل طالب في مجموعة خلال فترة</p>
+  </a>
+  <a href="{% url 'report_payments' %}" class="bg-white rounded-xl shadow p-6 hover:ring-2 ring-indigo-400">
+    <div class="text-3xl mb-2">💵</div>
+    <div class="font-bold text-lg">تقرير التحصيل</div>
+    <p class="text-sm text-gray-500 mt-1">ملخص المدفوعات والمتأخرين لكل مجموعة</p>
+  </a>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ exam.title }}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap justify-between items-start gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold">{{ exam.title }}</h1>
+    <p class="text-gray-500">{{ exam.group.name }} — {{ exam.group.subject }} · {{ exam.date|date:"d/m/Y" }} · من {{ exam.max_score }}</p>
+  </div>
+  <div class="flex gap-2">
+    <span class="bg-white rounded-lg px-3 py-2 text-sm shadow">{{ entered }} / {{ total }} درجة</span>
+    {% if entered %}
+    <form method="post" action="{% url 'exam_send_results' exam.pk %}"
+          onsubmit="return confirm('هتتبعت النتائج لأولياء الأمور. متأكد؟')">
+      {% csrf_token %}
+      <button class="bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-bold">إرسال واتساب</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="bg-white rounded-xl shadow divide-y" id="scores">
+  {% for row in rows %}
+  {% include 'exams/partials/score_row.html' with student=row.student result=row.result %}
+  {% empty %}
+  <div class="p-6 text-center text-gray-400">مفيش طلاب في المجموعة</div>
+  {% endfor %}
+</div>
+{% endblock %}

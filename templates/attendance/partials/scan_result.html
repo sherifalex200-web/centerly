@@ -1,0 +1,30 @@
+{% if error %}
+  <div data-error class="bg-red-600 text-white rounded-xl p-5 text-xl font-bold">✖ {{ error }}</div>
+
+{% elif candidates %}
+  <div data-error class="bg-yellow-100 border border-yellow-400 rounded-xl p-4">
+    <div class="font-bold mb-2">في أكتر من طالب بالاسم ده، اختار:</div>
+    {% for s in candidates %}
+    <button hx-post="{% url 'attendance_scan' session.pk %}" hx-vals='{"barcode":"{{ s.barcode }}"}'
+            hx-target="#scan-result" class="block w-full text-right bg-white rounded p-2 mb-1 hover:bg-indigo-50">
+      {{ s.name }} <span class="text-gray-400 text-sm">({{ s.get_grade_display }} - {{ s.barcode }})</span>
+    </button>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="rounded-xl p-5 {% if duplicate %}bg-yellow-400 text-gray-900{% elif not paid %}bg-orange-500 text-white{% else %}bg-green-600 text-white{% endif %}">
+    <div class="text-3xl font-bold">{% if duplicate %}⚠ مسجل قبل كده{% else %}✔ {{ student.name }}{% endif %}</div>
+    <div class="text-lg mt-1">
+      {% if duplicate %}{{ student.name }} — اتسجل الساعة {{ attendance.marked_at|time:"h:i A" }}
+      {% elif not paid %}💰 لم يدفع اشتراك شهر {{ session.date|date:"F" }} — {{ session.group.monthly_fee }} ج
+      {% else %}اشتراك الشهر مدفوع · هتوصل رسالة لولي الأمر{% endif %}
+    </div>
+  </div>
+
+  {# تحديث صف الطالب في القائمة + العداد (Out of Band) #}
+  <div hx-swap-oob="outerHTML:#row-{{ student.pk }}">
+    {% include 'attendance/partials/student_row.html' with present_count=None %}
+  </div>
+  <span id="counter" hx-swap-oob="true">{{ present_count }} / {{ total }}</span>
+{% endif %}

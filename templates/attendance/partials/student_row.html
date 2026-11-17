@@ -1,0 +1,26 @@
+<div id="row-{{ student.pk }}" class="flex items-center justify-between p-3 gap-3
+     {% if attendance.status == 'present' %}bg-green-50{% elif attendance.status == 'absent' %}bg-red-50{% endif %}">
+  <div class="flex-1">
+    <div class="font-semibold">{{ student.name }}
+      {% if not paid %}<span class="mr-2 text-xs bg-red-600 text-white rounded px-2 py-0.5">لم يدفع</span>{% endif %}
+    </div>
+    <div class="text-xs text-gray-500">
+      {{ student.barcode }}
+      {% if attendance %} · {{ attendance.get_status_display }} {{ attendance.marked_at|time:"h:i A" }}
+        {% if attendance.message_sent %}· ✓ رسالة{% endif %}{% endif %}
+    </div>
+  </div>
+  {% if not session.is_closed %}
+  <div class="flex gap-1">
+    <button hx-post="{% url 'attendance_mark' session.pk student.pk %}" hx-vals='{"status":"present"}'
+            hx-target="#row-{{ student.pk }}" hx-swap="outerHTML"
+            class="px-3 py-1 rounded text-sm {% if attendance.status == 'present' %}bg-green-600 text-white{% else %}bg-gray-100{% endif %}">حاضر</button>
+    <button hx-post="{% url 'attendance_mark' session.pk student.pk %}" hx-vals='{"status":"absent"}'
+            hx-target="#row-{{ student.pk }}" hx-swap="outerHTML"
+            class="px-3 py-1 rounded text-sm {% if attendance.status == 'absent' %}bg-red-600 text-white{% else %}bg-gray-100{% endif %}">غائب</button>
+  </div>
+  {% endif %}
+</div>
+{% if present_count is not None %}
+<span id="counter" hx-swap-oob="true">{{ present_count }} / {{ total }}</span>
+{% endif %}

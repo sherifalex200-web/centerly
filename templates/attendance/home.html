@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}تسجيل الحضور{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">حصص النهاردة — {{ today|date:"l d/m/Y" }}</h1>
+
+{% if not today_groups %}<p class="text-gray-500 mb-6">مفيش حصص مجدولة النهاردة.</p>{% endif %}
+<div class="grid md:grid-cols-2 gap-3 mb-8">
+  {% for g in today_groups %}
+  <form method="post" action="{% url 'open_session' g.pk %}">{% csrf_token %}
+    <button class="w-full text-right bg-white rounded-xl shadow p-4 hover:ring-2 ring-indigo-500">
+      <div class="font-bold text-lg">{{ g.name }} — {{ g.subject }}</div>
+      <div class="text-gray-600 text-sm">{{ g.teacher.name }} · {{ g.get_grade_display }} ·
+        {{ g.start_time|time:"h:i A" }} · {{ g.active_students_count }} طالب</div>
+    </button>
+  </form>
+  {% endfor %}
+</div>
+
+<details class="bg-white rounded-xl shadow p-4">
+  <summary class="cursor-pointer font-semibold">مجموعات تانية (حصة استثنائية)</summary>
+  <div class="mt-3 space-y-2">
+    {% for g in other_groups %}
+    <form method="post" action="{% url 'open_session' g.pk %}" class="flex justify-between items-center border-b py-2">
+      {% csrf_token %}
+      <span>{{ g.name }} — {{ g.subject }} ({{ g.days_display }})</span>
+      <button class="text-indigo-600 text-sm">افتح حصة</button>
+    </form>
+    {% endfor %}
+  </div>
+</details>
+{% endblock %}

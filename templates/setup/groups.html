@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}المجموعات{% endblock %}
+{% block content %}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold text-white">المجموعات</h1>
+  <a href="{% url 'group_add' %}" class="bg-gradient-to-l from-fuchsia-500 to-indigo-500 text-white rounded-xl px-4 py-2 text-sm font-bold">+ مجموعة</a>
+</div>
+
+<div class="rounded-2xl overflow-hidden divide-y divide-white/10" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18)">
+  {% for g in groups %}
+  <div class="flex items-center justify-between p-4 gap-3 {% if not g.is_active %}opacity-50{% endif %}">
+    <div>
+      <div class="font-semibold text-white">{{ g.name }} — {{ g.subject }}
+        {% if not g.is_active %}<span class="text-xs bg-red-500/40 text-red-100 rounded px-1.5 mr-1">متوقفة</span>{% endif %}
+      </div>
+      <div class="text-xs text-indigo-200">
+        {{ g.teacher.name }} · {{ g.get_grade_display }} · {{ g.days_display }} · {{ g.start_time|time:"h:i A" }}
+        · {{ g.monthly_fee }} ج/شهر · {{ g.active_students_count }} طالب
+      </div>
+    </div>
+    <div class="flex gap-2 shrink-0">
+      <a href="{% url 'group_edit' g.pk %}" class="text-sm bg-white/15 text-white rounded-lg px-3 py-1 hover:bg-white/25">تعديل</a>
+      <form method="post" action="{% url 'group_toggle' g.pk %}">{% csrf_token %}
+        <button class="text-sm rounded-lg px-3 py-1 {% if g.is_active %}bg-orange-500/80 text-white{% else %}bg-emerald-500/80 text-white{% endif %}">
+          {% if g.is_active %}إيقاف{% else %}تفعيل{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <div class="p-8 text-center text-indigo-200">
+    مفيش مجموعات.
+    <a href="{% url 'group_add' %}" class="text-fuchsia-300 underline">أضف أول مجموعة</a>
+    <p class="text-xs mt-2 text-indigo-300">لازم يكون عندك مدرس أولاً من قائمة المدرسين</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

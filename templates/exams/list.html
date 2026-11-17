@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}الامتحانات{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+  <h1 class="text-2xl font-bold">الامتحانات</h1>
+  <a href="{% url 'exam_create' %}" class="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-bold">+ امتحان</a>
+</div>
+<div class="bg-white rounded-xl shadow divide-y">
+  {% for e in exams %}
+  <a href="{% url 'exam_detail' e.pk %}" class="flex justify-between items-center p-4 hover:bg-gray-50">
+    <div>
+      <div class="font-semibold">{{ e.title }}</div>
+      <div class="text-sm text-gray-500">{{ e.group.name }} — {{ e.group.subject }} · {{ e.date|date:"d/m/Y" }}</div>
+    </div>
+    <span class="text-gray-400 text-sm">من {{ e.max_score }}</span>
+  </a>
+  {% empty %}
+  <div class="p-8 text-center text-gray-400">مفيش امتحانات بعد. <a href="{% url 'exam_create' %}" class="text-indigo-600 underline">أضف امتحان</a></div>
+  {% endfor %}
+</div>
+{% endblock %}

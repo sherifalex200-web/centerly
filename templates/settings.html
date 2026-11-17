@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}إعدادات السنتر{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+  <h1 class="text-2xl font-bold mb-4">إعدادات السنتر</h1>
+  <form method="post" enctype="multipart/form-data" class="bg-white rounded-xl shadow p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1">اسم السنتر</label>
+      <input name="name" value="{{ center.name }}" required class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">التليفون</label>
+      <input name="phone" value="{{ center.phone }}" class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">العنوان</label>
+      <input name="address" value="{{ center.address }}" class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">الاسم في رسائل واتساب</label>
+      <input name="whatsapp_sender_name" value="{{ center.whatsapp_sender_name }}"
+             placeholder="لو فاضي هيستخدم اسم السنتر" class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">اللوجو</label>
+      {% if center.logo %}<img src="{{ center.logo.url }}" class="h-16 mb-2 rounded">{% endif %}
+      <input type="file" name="logo" accept="image/*" class="w-full border rounded-lg p-2">
+    </div>
+    <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+      <div>الخطة: <strong>{{ center.get_plan_display }}</strong></div>
+      <div>نهاية الاشتراك: <strong>{{ center.subscription_end|date:"d/m/Y" }}</strong></div>
+      <div>رصيد الرسائل: <strong>{{ center.messages_used }} / {{ center.messages_quota }}</strong></div>
+    </div>
+    <button class="w-full bg-indigo-600 text-white rounded-lg py-3 font-bold">حفظ</button>
+  </form>
+</div>
+{% endblock %}

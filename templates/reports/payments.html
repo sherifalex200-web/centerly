@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}تقرير التحصيل{% endblock %}
+{% block content %}
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <h1 class="text-2xl font-bold">تقرير التحصيل — {{ month|date:"F Y" }}</h1>
+  <div class="flex gap-2">
+    <form method="get">
+      <input type="month" name="month" value="{{ month|date:'Y-m' }}" onchange="this.form.submit()"
+             class="border rounded-lg p-2">
+    </form>
+    <a href="{% url 'export_payments_excel' %}?month={{ month|date:'Y-m' }}"
+       class="bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-bold">تصدير إكسل</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-3 mb-6">
+  <div class="bg-white rounded-xl shadow p-4 text-center">
+    <div class="text-xl font-bold">{{ grand_expected }} ج</div>
+    <div class="text-xs text-gray-500">المطلوب</div>
+  </div>
+  <div class="bg-green-50 rounded-xl shadow p-4 text-center">
+    <div class="text-xl font-bold text-green-700">{{ grand_collected }} ج</div>
+    <div class="text-xs text-gray-500">المحصّل</div>
+  </div>
+  <div class="bg-red-50 rounded-xl shadow p-4 text-center">
+    <div class="text-xl font-bold text-red-600">{{ grand_remaining }} ج</div>
+    <div class="text-xs text-gray-500">المتبقي</div>
+  </div>
+</div>
+
+<div class="bg-white rounded-xl shadow overflow-x-auto mb-6">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="p-3 text-right">المجموعة</th>
+        <th class="p-3">طلاب</th>
+        <th class="p-3">المطلوب</th>
+        <th class="p-3">المحصّل</th>
+        <th class="p-3">متأخر</th>
+        <th class="p-3">%</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for s in summary %}
+      <tr>
+        <td class="p-3 font-medium">{{ s.group.name }} — {{ s.group.subject }}</td>
+        <td class="p-3 text-center">{{ s.enrolled }}</td>
+        <td class="p-3 text-center">{{ s.expected }}</td>
+        <td class="p-3 text-center text-green-700">{{ s.collected }}</td>
+        <td class="p-3 text-center text-red-600">{{ s.unpaid_count }}</td>
+        <td class="p-3 text-center font-bold">{{ s.pct }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if recent_payments %}
+<div class="bg-white rounded-xl shadow p-4">
+  <h2 class="font-bold mb-3">آخر المدفوعات</h2>
+  <div class="divide-y text-sm">
+    {% for p in recent_payments %}
+    <div class="flex justify-between py-2">
+      <span>{{ p.student.name }} · {{ p.group.name }}</span>
+      <span class="text-green-700">{{ p.amount }} ج · {{ p.get_method_display }} · {{ p.paid_at|date:"d/m h:i A" }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

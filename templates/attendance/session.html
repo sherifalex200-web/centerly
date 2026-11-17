@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}{{ session.group.name }}{% endblock %}
+{% block content %}
+
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold">{{ session.group.name }} — {{ session.group.subject }}</h1>
+    <p class="text-gray-600">{{ session.teacher.name }} · {{ session.date|date:"l d/m/Y" }}</p>
+  </div>
+  <div class="text-center bg-white rounded-xl shadow px-5 py-2">
+    <div class="text-xs text-gray-500">الحضور</div>
+    <div class="text-2xl font-bold" id="counter">{{ present_count }} / {{ total }}</div>
+  </div>
+</div>
+
+{% if session.is_closed %}
+  <div class="bg-gray-200 text-gray-700 rounded-lg p-3 mb-4">الحصة مقفولة ✔ — الغياب اتسجل واتبعتت الرسائل.</div>
+{% else %}
+  <!-- خانة المسح: قارئ الباركود USB بيكتب الرقم ويضغط Enter تلقائياً -->
+  <form hx-post="{% url 'attendance_scan' session.pk %}"
+        hx-target="#scan-result" hx-swap="innerHTML"
+        hx-on::after-request="this.reset(); this.barcode.focus()"
+        class="bg-white rounded-xl shadow p-4 mb-4">
+    <label class="block text-sm text-gray-600 mb-1">امسح الكارت أو اكتب اسم الطالب</label>
+    <div class="flex gap-2">
+      <input name="barcode" id="barcode" autofocus autocomplete="off" inputmode="numeric"
+             class="flex-1 text-2xl border-2 border-indigo-300 rounded-lg p-3 focus:border-indigo-600 outline-none"
+             placeholder="▌">
+      <button type="button" id="cam-btn" class="bg-gray-200 rounded-lg px-4 text-sm md:hidden">📷</button>
+      <button class="bg-indigo-600 text-white rounded-lg px-5 font-bold">تسجيل</button>
+    </div>
+    <div id="reader" class="mt-3 hidden"></div>
+  </form>
+
+  <div id="scan-result" class="mb-4"></div>
+{% endif %}
+
+<!-- قائمة الطلاب -->
+<div class="bg-white rounded-xl shadow divide-y" id="students-list">
+  {% for row in rows %}{% include 'attendance/partials/student_row.html' with student=row.student attendance=row.attendance paid=row.paid %}{% endfor %}
+</div>
+
+{% if not session.is_closed %}
+<form method="post" action="{% url 'close_session' session.pk %}" class="mt-6 text-left"
+      onsubmit="return confirm('هيتسجل غياب لكل اللي مجاش وهتتبعت رسائل لأولياء الأمور. متأكد؟')">
+  {% csrf_token %}
+  <button class="bg-red-600 text-white rounded-lg px-5 py-2 font-bold">إنهاء الحصة وتسجيل الغياب</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+  // صوت بسيط للنجاح/الفشل
+  const beep = (ok) => { const c = new AudioContext(), o = c.createOscillator();
+    o.frequency.value = ok ? 880 : 220; o.connect(c.destination); o.start(); o.stop(c.currentTime + .15); };
+  document.body.addEventListener('htmx:afterSwap', e => {
+    if (e.detail.target.id === 'scan-result') beep(!e.detail.target.querySelector('[data-error]'));
+  });
+
+  // المسح بكاميرا الموبايل
+  const camBtn = document.getElementById('cam-btn'), reader = document.getElementById('reader');
+  let scanner = null;
+  camBtn?.addEventListener('click', async () => {
+    if (scanner) { await scanner.stop(); scanner = null; reader.classList.add('hidden'); return; }
+    reader.classList.remove('hidden');
+    scanner = new Html5Qrcode('reader');
+    let lock = false;
+    scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 220 }, (code) => {
+      if (lock) return; lock = true; setTimeout(() => lock = false, 2000);
+      const input = document.getElementById('barcode');
+      input.value = code; input.form.requestSubmit();
+    });
+  });
+</script>
+{% endblock %}

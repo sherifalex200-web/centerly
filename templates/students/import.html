@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}استيراد طلاب{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <h1 class="text-2xl font-bold mb-4">استيراد الطلاب من إكسل</h1>
+
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm">
+    <p class="font-bold mb-1">طريقة الاستخدام:</p>
+    <ol class="list-decimal list-inside space-y-1 text-gray-700">
+      <li>حمّل <a href="{% url 'students_import_template' %}" class="text-indigo-600 underline font-bold">نموذج الإكسل</a></li>
+      <li>املأ الأعمدة: الاسم · تليفون ولي الأمر · الصف · تليفون الطالب · المدرسة · ملاحظات</li>
+      <li>ارفع الملف هنا (واختار مجموعة لو عايز تربطهم بيها مباشرة)</li>
+    </ol>
+  </div>
+
+  <form method="post" action="{% url 'students_import_upload' %}" enctype="multipart/form-data"
+        class="bg-white rounded-xl shadow p-6 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm font-medium mb-1">ملف الإكسل (.xlsx)</label>
+      <input type="file" name="file" accept=".xlsx,.xls" required
+             class="w-full border rounded-lg p-2">
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">ربط بمجموعة (اختياري)</label>
+      <select name="group" class="w-full border rounded-lg p-2">
+        <option value="">— بدون ربط —</option>
+        {% for g in groups %}
+        <option value="{{ g.pk }}">{{ g.name }} — {{ g.subject }} ({{ g.get_grade_display }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="w-full bg-green-600 text-white rounded-lg py-3 font-bold">استيراد</button>
+  </form>
+
+  <p class="text-center mt-4"><a href="{% url 'students_list' %}" class="text-gray-500 text-sm">← رجوع للطلاب</a></p>
+</div>
+{% endblock %}

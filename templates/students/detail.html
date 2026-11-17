@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{{ student.name }}{% endblock %}
+{% block content %}
+<div class="flex flex-wrap justify-between items-start gap-3 mb-4">
+  <div>
+    <h1 class="text-2xl font-bold">{{ student.name }}</h1>
+    <p class="text-gray-500">{{ student.get_grade_display }} · {{ student.barcode }}</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'student_edit' student.pk %}" class="bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-bold">تعديل</a>
+    <a href="{% url 'students_list' %}" class="bg-gray-200 rounded-lg px-4 py-2 text-sm">رجوع</a>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4 mb-6">
+  <div class="bg-white rounded-xl shadow p-4">
+    <h2 class="font-bold mb-2">البيانات</h2>
+    <div class="text-sm space-y-1">
+      <div>ولي الأمر: <strong dir="ltr">{{ student.parent_phone }}</strong></div>
+      {% if student.phone %}<div>تليفون الطالب: <strong dir="ltr">{{ student.phone }}</strong></div>{% endif %}
+      {% if student.school %}<div>المدرسة: {{ student.school }}</div>{% endif %}
+      {% if student.notes %}<div class="text-gray-500">{{ student.notes }}</div>{% endif %}
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow p-4">
+    <h2 class="font-bold mb-2">المجموعات</h2>
+    {% for e in enrollments %}
+    <div class="text-sm py-1">{{ e.group.name }} — {{ e.group.subject }} ({{ e.group.teacher.name }})</div>
+    {% empty %}
+    <p class="text-gray-400 text-sm">مش مسجل في أي مجموعة</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+  <div class="bg-white rounded-xl shadow p-4">
+    <h2 class="font-bold mb-2">آخر الحضور</h2>
+    <div class="divide-y text-sm">
+      {% for a in recent_att %}
+      <div class="flex justify-between py-1.5">
+        <span>{{ a.session.group.name }} · {{ a.session.date|date:"d/m" }}</span>
+        <span class="{% if a.status == 'present' %}text-green-600{% else %}text-red-600{% endif %}">
+          {{ a.get_status_display }}
+        </span>
+      </div>
+      {% empty %}
+      <p class="text-gray-400">لا يوجد</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="bg-white rounded-xl shadow p-4">
+    <h2 class="font-bold mb-2">المدفوعات</h2>
+    <div class="divide-y text-sm">
+      {% for p in payments %}
+      <div class="flex justify-between py-1.5">
+        <span>{{ p.group.name }} · {{ p.month|date:"m/Y" }}</span>
+        <span class="text-green-700 font-medium">{{ p.amount }} ج</span>
+      </div>
+      {% empty %}
+      <p class="text-gray-400">لا يوجد</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
