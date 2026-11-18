@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>{{ request.center.name }}</title>
+<link rel="manifest" href="/app/manifest.webmanifest">
+<link rel="icon" href="/app/icon.svg">
+<meta name="theme-color" content="#12332f">
+<style>
+:root{--ink:#12332f;--bg:#eef3f1;--card:#fff;--line:#d3dfdb;--chalk:#f2b134;--ok:#1f8a5b;--warn:#a96a0c;--bad:#c8472f;--txt:#14221f;--mut:#5d716c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.5 system-ui,"Segoe UI",Tahoma,"Noto Sans Arabic",sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+header{background:var(--ink);color:#fff;position:sticky;top:0;z-index:5;padding:calc(10px + env(safe-area-inset-top)) 16px 0}
+.top{display:flex;justify-content:space-between;align-items:center;max-width:640px;margin:auto}
+.top b{font-size:18px}
+.pill{font-size:13px;padding:3px 12px;border-radius:99px;font-weight:600}
+.pill.on{background:#1f8a5b}.pill.off{background:var(--chalk);color:#2b1d00}
+nav{display:flex;max-width:640px;margin:8px auto 0}
+nav button{flex:1;background:none;border:0;color:#b9cfca;font:inherit;font-weight:600;padding:10px 4px;border-bottom:4px solid transparent;cursor:pointer}
+nav button.on{color:#fff;border-color:var(--chalk)}
+nav i{font-style:normal;background:var(--chalk);color:#2b1d00;border-radius:99px;padding:0 7px;font-size:12px;margin-inline-start:4px}
+nav i:empty{display:none}
+main{max-width:640px;margin:auto;padding:16px}
+select,input,button.b{font:inherit;border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--txt);width:100%}
+:focus-visible{outline:3px solid var(--chalk);outline-offset:2px}
+#scan{font-size:22px;text-align:center;letter-spacing:3px;margin-top:10px;border-color:var(--ink)}
+.slab{margin-top:14px;border-radius:16px;padding:22px 18px;min-height:150px;display:flex;flex-direction:column;justify-content:center;background:#e1ebe8;color:var(--mut);border:2px dashed #aebfba}
+.slab.ok,.slab.warn,.slab.bad{border:0;color:#fff}
+.slab.ok{background:var(--ok)}.slab.warn{background:var(--warn)}.slab.bad{background:var(--bad)}
+.slab h2{margin:0;font-size:30px;line-height:1.25}.slab p{margin:4px 0 0;font-size:17px}
+.slab em{font-style:normal;background:var(--chalk);color:#2b1d00;border-radius:8px;padding:3px 10px;font-weight:700;margin-top:10px;align-self:flex-start;font-size:15px}
+.count{display:flex;justify-content:space-between;margin:16px 2px 6px;color:var(--mut);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px}
+.card h3{margin:0}.mut{color:var(--mut);margin:2px 0;font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}.row.col{flex-direction:column;align-items:stretch}
+.pay{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}
+.pay button,.act{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer}
+.act.big{width:100%;margin-top:10px;padding:14px}
+.chip{font-size:13px;font-weight:700;padding:2px 10px;border-radius:99px}.chip.ok{background:#d6efe3;color:#0f6a41}
+.err{color:var(--bad);font-size:14px}
+#toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:99px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div hidden>{% csrf_token %}</div>
+<header>
+  <div class="top"><b>{{ request.center.name }}</b><span id="pill" class="pill"></span></div>
+  <nav>
+    <button data-t="att">الحضور</button><button data-t="pay">التحصيل</button>
+    <button data-t="syn">المزامنة<i id="qn"></i></button>
+  </nav>
+</header>
+<main id="view"></main>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){alert('مساحة التخزين ممتلئة')}}};
+const csrf=()=>(document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);
+let D=ls.get('cx_d',null),Q=ls.get('cx_q',[]),tab='att',busy=false,res=null,gsel=0,note='',L={};
+const saveD=()=>ls.set('cx_d',D),saveQ=()=>ls.set('cx_q',Q);
+
+function ix(){
+  if(!D)return;
+  L.s=new Map(D.students.map(s=>[s.id,s]));L.b=new Map(D.students.map(s=>[s.b,s]));
+  L.g=new Map(D.groups.map(g=>[g.id,g]));
+  L.e=new Set(D.enr.map(x=>x.join(':')));L.p=new Set(D.paid.map(x=>x.join(':')));L.a=new Set(D.att.map(x=>x.join(':')));
+  if(!L.g.has(gsel))gsel=(D.groups.find(g=>g.today)||D.groups[0]||{}).id||0;
+}
+function toast(t){const e=$('#toast');e.textContent=t;e.className='show';setTimeout(()=>e.className='',1600)}
+function pill(){const on=navigator.onLine,p=$('#pill');p.className='pill '+(on?'on':'off');p.textContent=on?'متصل':'بدون إنترنت';$('#qn').textContent=Q.length||''}
+
+async function sync(manual){
+  if(busy||!navigator.onLine){if(manual)toast('لا يوجد اتصال بالإنترنت');return}
+  busy=true;note='';
+  try{
+    const todo=Q.filter(o=>!o.err);
+    if(todo.length){
+      const r=await fetch('/app/api/sync/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify({ops:todo})});
+      if(r.status===401){note='انتهت الجلسة. سجّل الدخول من جديد وستُرسل العمليات المحفوظة.';return}
+      if(!r.ok)throw 0;
+      const m=new Map((await r.json()).results.map(x=>[x.uuid,x]));
+      Q=Q.filter(o=>{const x=m.get(o.uuid);if(!x)return true;if(x.status==='error'){o.err=x.error;return true}return false});
+      saveQ();
+    }
+    if(!Q.some(o=>!o.err)){
+      const r=await fetch('/app/api/bootstrap/');
+      if(r.ok){D=await r.json();saveD();ix();ls.set('cx_t',Date.now())}
+    }
+    if(manual)toast('تمت المزامنة');
+  }catch(e){if(manual)toast('تعذرت المزامنة، حاول لاحقاً')}
+  finally{busy=false;render()}
+}
+
+/* ---------- الحضور ---------- */
+function scan(code){
+  code=code.trim();if(!code)return;
+  const s=L.b.get(code),g=gsel;
+  if(!s)res={k:'bad',t:'الباركود غير مسجل',p:code};
+  else if(!L.e.has(s.id+':'+g))res={k:'warn',t:s.n,p:'غير مسجل في هذه المجموعة'};
+  else if(L.a.has(g+':'+s.id))res={k:'warn',t:s.n,p:'تم تسجيل حضوره من قبل'};
+  else{
+    Q.push({uuid:uid(),type:'attendance',student_id:s.id,group_id:g,date:D.today,at:new Date().toISOString()});
+    D.att.push([g,s.id]);L.a.add(g+':'+s.id);saveQ();saveD();
+    res={k:'ok',t:s.n,p:'حاضر',due:!L.p.has(s.id+':'+g)?'لم يدفع اشتراك الشهر: '+L.g.get(g).fee+' ج':''};
+    sync();
+  }
+  navigator.vibrate&&navigator.vibrate(res.k==='ok'?60:[80,60,80]);
+  render();
+}
+function vAtt(){
+  const gs=[...D.groups].sort((a,b)=>b.today-a.today);
+  const sl=res?`<div class="slab ${res.k}"><h2>${esc(res.t)}</h2><p>${esc(res.p)}</p>${res.due?`<em>${esc(res.due)}</em>`:''}</div>`
+    :'<div class="slab"><h2>امسح كارت الطالب</h2><p>أو اكتب الباركود واضغط Enter</p></div>';
+  const en=D.enr.filter(e=>e[1]===gsel).length,at=D.att.filter(a=>a[0]===gsel);
+  return `<select id="grp">${gs.map(g=>`<option value="${g.id}" ${g.id===gsel?'selected':''}>${g.today?'اليوم: ':''}${esc(g.n)} (${g.st})</option>`).join('')}</select>
+  <input id="scan" inputmode="numeric" autocomplete="off" placeholder="الباركود">${sl}
+  <div class="count"><span>حضر ${at.length} من ${en}</span></div>
+  ${at.slice(-30).reverse().map(a=>`<div class="card" style="padding:8px 14px;margin-top:6px">${esc((L.s.get(a[1])||{}).n)}</div>`).join('')}`;
+}
+
+/* ---------- التحصيل ---------- */
+function vPay(){return `<input id="q" placeholder="اسم الطالب أو الباركود أو التليفون"><div id="sres"></div>`}
+function found(q){
+  q=q.trim();if(!q)return'';
+  return D.students.filter(s=>s.b===q||s.n.includes(q)||(s.p||'').includes(q)||(s.ph||'').includes(q)).slice(0,6).map(card).join('')||'<p class="mut">لا توجد نتائج</p>';
+}
+function card(s){
+  const gs=D.enr.filter(e=>e[0]===s.id).map(e=>L.g.get(e[1])).filter(Boolean);
+  return `<div class="card"><h3>${esc(s.n)}</h3><p class="mut">ولي الأمر: ${esc(s.p)}</p>`+(gs.length?gs.map(g=>L.p.has(s.id+':'+g.id)
+   ?`<div class="row"><b>${esc(g.n)}</b><span class="chip ok">مدفوع</span></div>`
+   :`<div class="row col"><b>${esc(g.n)}</b><div class="pay"><input type="number" id="a${g.id}" value="${g.fee}" inputmode="decimal">
+     <select id="m${g.id}"><option value="cash">كاش</option><option value="wallet">محفظة</option><option value="instapay">إنستاباي</option></select>
+     <button onclick="pay(${s.id},${g.id})">تحصيل</button></div></div>`).join(''):'<p class="mut">غير مسجل في مجموعات</p>')+'</div>';
+}
+function pay(sid,gid){
+  const amount=+$('#a'+gid).value;if(!(amount>0)){toast('اكتب مبلغاً صحيحاً');return}
+  Q.push({uuid:uid(),type:'payment',student_id:sid,group_id:gid,month:D.month,amount,method:$('#m'+gid).value,at:new Date().toISOString()});
+  D.paid.push([sid,gid]);L.p.add(sid+':'+gid);saveQ();saveD();pill();
+  $('#sres').innerHTML=found($('#q').value);toast('تم التحصيل');sync();
+}
+
+/* ---------- المزامنة ---------- */
+function vSyn(){
+  const t=ls.get('cx_t',0);
+  return `${note?`<p class="err">${esc(note)}</p>`:''}
+  <div class="card"><b>${Q.length?'عمليات محفوظة على الجهاز: '+Q.length:'كل العمليات وصلت للسيرفر'}</b>
+  <p class="mut">آخر تحديث للبيانات: ${t?new Date(t).toLocaleString('ar-EG'):'لم يتم بعد'}</p>
+  <button class="act big" onclick="sync(true)">${busy?'جارٍ المزامنة...':'مزامنة الآن'}</button></div>
+  ${Q.map((o,i)=>`<div class="card"><b>${o.type==='attendance'?'حضور':'دفعة '+o.amount+' ج'}</b> ${esc((L.s.get(o.student_id)||{}).n)}
+   <p class="mut">${esc((L.g.get(o.group_id)||{}).n)}</p>${o.err?`<p class="err">${esc(o.err)} <button class="act" onclick="Q.splice(${i},1);saveQ();render()">حذف</button></p>`:''}</div>`).join('')}`;
+}
+
+function render(){
+  pill();
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  const v=$('#view');
+  if(!D){v.innerHTML=`<div class="slab"><h2>جارٍ تحميل البيانات</h2><p>${navigator.onLine?'انتظر لحظات':'افتح التطبيق مرة واحدة والإنترنت شغال لتحميل بيانات السنتر'}</p></div>`;return}
+  v.innerHTML=tab==='att'?vAtt():tab==='pay'?vPay():vSyn();
+  if(tab==='att'){
+    $('#grp').onchange=e=>{gsel=+e.target.value;res=null;render()};
+    const sc=$('#scan');sc.onkeydown=e=>{if(e.key==='Enter'){const c=sc.value;sc.value='';scan(c)}};sc.focus();
+  }
+  if(tab==='pay')$('#q').oninput=e=>$('#sres').innerHTML=found(e.target.value);
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});
+addEventListener('online',()=>sync());addEventListener('offline',pill);
+setInterval(()=>sync(),30000);
+ix();render();sync();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/app/sw.js',{scope:'/app/'});
+</script>
+</body>
+</html>
