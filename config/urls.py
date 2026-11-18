@@ -14,3 +14,12 @@ urlpatterns = [
     path('billing/expired/', lambda r: render(r, 'billing_expired.html'), name='billing_expired'),
     path('', include('core.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+from core import offline
+urlpatterns += [
+    path('app/', offline.app_page, name='offline_app'),
+    path('app/sw.js', offline.service_worker),
+    path('app/manifest.webmanifest', offline.manifest),
+    path('app/icon.svg', offline.icon),
+    path('app/api/bootstrap/', offline.bootstrap),
+    path('app/api/sync/', offline.sync),
+]
